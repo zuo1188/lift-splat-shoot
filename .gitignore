@@ -135,3 +135,6 @@ goodmodel.pt.bak
 storage/
 imagenet_pretrained/
 *.csv
+nohup.out
+.sbatch.tmp
+torch_train.sh

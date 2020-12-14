@@ -9,7 +9,7 @@ set -x
 #SBATCH --gres=gpu:8
 #SBATCH --partition=$2
 #SBATCH --workdir=$(pwd)
-#SBATCH --framework=artifactory.momenta.works/docker-momenta/lane_heat_pytorch:v0.0.9
+#SBATCH --framework=artifactory.momenta.works/docker-momenta/lane_heat_pytorch:v0.0.10
 #SBATCH --dataset=234huan,lidar-open-dataset
 export NCCL_DEBUG=INFO
 export NCCL_TREE_THRESHOLD=0
