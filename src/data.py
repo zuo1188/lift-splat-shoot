@@ -264,4 +264,4 @@ def compile_data(version, dataroot, data_aug_conf, grid_conf, bsz,
                                             shuffle=False,
                                             num_workers=nworkers)
 
-    return trainloader, valloader
+    return trainloader, valloader,traindata,valdata
