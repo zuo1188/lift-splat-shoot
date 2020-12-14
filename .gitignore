@@ -138,3 +138,4 @@ imagenet_pretrained/
 nohup.out
 .sbatch.tmp
 torch_train.sh
+.nfs*
