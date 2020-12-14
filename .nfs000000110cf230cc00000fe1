@@ -1,0 +1,36 @@
+TensorFlow installation not found - running with reduced feature set.
+TensorBoard 2.4.0 at http://0.0.0.0:8810/ (Press CTRL+C to quit)
+TensorFlow installation not found - running with reduced feature set.
+TensorBoard 2.4.0 at http://0.0.0.0:8810/ (Press CTRL+C to quit)
+E1214 11:19:32.919569 140642423457536 hparams_plugin.py:134] HParams error: Can't find an HParams-plugin experiment data in the log directory. Note that it takes some time to scan the log directory; if you just started Tensorboard it could be that we haven't finished scanning it yet. Consider trying again in a few seconds.
+W1214 11:19:32.920011 140642423457536 security_validator.py:51] In 3.0, this warning will become an error:
+X-Content-Type-Options is required to be "nosniff"
+W1214 11:19:32.920943 140642423457536 security_validator.py:51] In 3.0, this warning will become an error:
+Requires default-src for Content-Security-Policy
+E1214 11:19:32.981014 140642423457536 hparams_plugin.py:134] HParams error: Can't find an HParams-plugin experiment data in the log directory. Note that it takes some time to scan the log directory; if you just started Tensorboard it could be that we haven't finished scanning it yet. Consider trying again in a few seconds.
+W1214 11:19:32.981362 140642423457536 security_validator.py:51] In 3.0, this warning will become an error:
+X-Content-Type-Options is required to be "nosniff"
+W1214 11:19:32.981943 140642423457536 security_validator.py:51] In 3.0, this warning will become an error:
+Requires default-src for Content-Security-Policy
+E1214 11:19:33.043678 140642423457536 hparams_plugin.py:134] HParams error: Can't find an HParams-plugin experiment data in the log directory. Note that it takes some time to scan the log directory; if you just started Tensorboard it could be that we haven't finished scanning it yet. Consider trying again in a few seconds.
+W1214 11:19:33.044025 140642423457536 security_validator.py:51] In 3.0, this warning will become an error:
+X-Content-Type-Options is required to be "nosniff"
+W1214 11:19:33.044648 140642423457536 security_validator.py:51] In 3.0, this warning will become an error:
+Requires default-src for Content-Security-Policy
+E1214 11:19:33.105460 140642423457536 hparams_plugin.py:134] HParams error: Can't find an HParams-plugin experiment data in the log directory. Note that it takes some time to scan the log directory; if you just started Tensorboard it could be that we haven't finished scanning it yet. Consider trying again in a few seconds.
+W1214 11:19:33.105802 140642423457536 security_validator.py:51] In 3.0, this warning will become an error:
+X-Content-Type-Options is required to be "nosniff"
+W1214 11:19:33.106503 140642423457536 security_validator.py:51] In 3.0, this warning will become an error:
+Requires default-src for Content-Security-Policy
+W1214 11:34:33.269101 140642451121920 plugin_event_multiplexer.py:263] Deleting accumulator 'Dec14_11-10-30_10-9-1-8201214-111030'
+W1214 11:34:33.270355 140642451121920 plugin_event_multiplexer.py:263] Deleting accumulator 'Dec14_11-13-59_10-9-1-8201214-111359'
+W1214 11:34:33.270423 140642451121920 plugin_event_multiplexer.py:263] Deleting accumulator 'Dec14_11-09-30_10-9-1-8201214-110930'
+W1214 11:34:33.270462 140642451121920 plugin_event_multiplexer.py:263] Deleting accumulator 'Dec14_11-28-22_10-9-1-8201214-112822'
+W1214 11:34:33.270497 140642451121920 plugin_event_multiplexer.py:263] Deleting accumulator 'Dec14_11-05-00_10-9-1-8201214-110500'
+W1214 11:34:33.270531 140642451121920 plugin_event_multiplexer.py:263] Deleting accumulator 'Dec14_11-30-28_10-9-1-8201214-113028'
+W1214 11:34:33.271260 140642451121920 plugin_event_multiplexer.py:263] Deleting accumulator 'Dec14_11-15-43_10-9-1-8201214-111543'
+W1214 11:34:33.271295 140642451121920 plugin_event_multiplexer.py:263] Deleting accumulator 'Dec14_10-50-06_10-9-1-8201214-105006'
+W1214 11:34:33.271327 140642451121920 plugin_event_multiplexer.py:263] Deleting accumulator 'Dec14_11-03-55_10-9-1-8201214-110355'
+W1214 11:34:33.271362 140642451121920 plugin_event_multiplexer.py:263] Deleting accumulator 'Dec14_10-59-30_10-9-1-8201214-105930'
+TensorFlow installation not found - running with reduced feature set.
+TensorBoard 2.4.0 at http://0.0.0.0:8810/ (Press CTRL+C to quit)
