@@ -15,6 +15,8 @@ from functools import reduce
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+
 from nuscenes.utils.data_classes import LidarPointCloud
 from nuscenes.utils.geometry_utils import transform_matrix
 from nuscenes.map_expansion.map_api import NuScenesMap
@@ -223,6 +225,7 @@ class SimpleLoss(torch.nn.Module):
     def __init__(self, pos_weight):
         super(SimpleLoss, self).__init__()
         self.loss_fn = torch.nn.BCEWithLogitsLoss(pos_weight=torch.Tensor([pos_weight]))
+        # self.loss_fn = torch.nn.SmoothL1Loss()
 
     def forward(self, ypred, ytgt):
         loss = self.loss_fn(ypred, ytgt)
@@ -249,7 +252,7 @@ def get_val_info(model, valloader, loss_fn, device, use_tqdm=False):
     loader = tqdm(valloader) if use_tqdm else valloader
     with torch.no_grad():
         for batch in loader:
-            allimgs, rots, trans, intrins, post_rots, post_trans, binimgs = batch
+            allimgs, rots, trans, intrins, post_rots, post_trans, binimgs,meta = batch
             preds = model(allimgs.to(device), rots.to(device),
                           trans.to(device), intrins.to(device), post_rots.to(device),
                           post_trans.to(device))
@@ -294,7 +297,243 @@ def get_nusc_maps(map_folder):
                 ]}
     return nusc_maps
 
+def set_rgb_numpy(img_show,bin_img,color):
+    img_show[:,:,0] = bin_img*color[0]#np.where(bin_img>1e-10, bin_img*color[0],img_show[:,:,0])
+    img_show[:,:,1] = bin_img*color[1]#np.where(bin_img>1e-10, bin_img*color[1],img_show[:,:,1])
+    img_show[:,:,2] = bin_img*color[2]#np.where(bin_img>1e-10,bin_img*color[2],img_show[:,:,2])
+    return img_show
 
+
+def plot_vehicle_roadsegment(imgs,binimgs,preds_vehicle,preds_roadsegment,cams,grid_conf,gs,output):
+    dx, bx, _ = gen_dx_bx(grid_conf['xbound'], grid_conf['ybound'], grid_conf['zbound'])
+    dx, bx = dx[:2].numpy(), bx[:2].numpy()
+    for si in range(imgs.shape[0]):
+        plt.clf()
+        for imgi, img in enumerate(imgs[si]):
+            showimg = denormalize_img(img)
+            if cams[imgi][0] == 'CAM_FRONT':
+                ax = plt.subplot(gs[2 , 1])
+            elif cams[imgi][0] == 'CAM_FRONT_LEFT':
+                ax = plt.subplot(gs[2, 0])         
+            elif cams[imgi][0] == 'CAM_FRONT_RIGHT':
+                ax = plt.subplot(gs[2 , 2])
+            elif cams[imgi][0] == 'CAM_BACK':
+                ax = plt.subplot(gs[3, 1])
+                showimg = showimg.transpose(Image.FLIP_LEFT_RIGHT)
+            elif cams[imgi][0] == 'CAM_BACK_LEFT':
+                ax = plt.subplot(gs[3, 0])
+                showimg = showimg.transpose(Image.FLIP_LEFT_RIGHT)
+            elif cams[imgi][0] == 'CAM_BACK_RIGHT':
+                ax = plt.subplot(gs[3, 2])
+                showimg = showimg.transpose(Image.FLIP_LEFT_RIGHT)
+            
+            plt.imshow(showimg)
+            plt.axis('off')
+            plt.annotate(cams[imgi][0].replace('_', ' '), (0.01, 0.92), xycoords='axes fraction')
+
+        bin_img = binimgs.cpu().detach().numpy()[si]
+        pred_vehicle = preds_vehicle.cpu().detach().numpy()[si]
+        pred_roadsegment = preds_roadsegment.cpu().detach().numpy()[si]
+    
+        #road_segment
+        ax = plt.subplot(gs[0, 0])
+        ax.get_xaxis().set_ticks([])
+        ax.get_yaxis().set_ticks([])
+        img = np.zeros((binimgs.shape[2],binimgs.shape[3],3))
+        img = set_rgb_numpy(img,bin_img[1],(1,0.9,0))
+        plt.imshow(img, vmin=0, vmax=1)
+        add_ego(bx, dx)
+        plt.xlim((binimgs.shape[3], 0))
+        plt.ylim((0, binimgs.shape[3]))
+
+        ax = plt.subplot(gs[1, 0])
+        ax.get_xaxis().set_ticks([])
+        ax.get_yaxis().set_ticks([])
+        img = np.zeros((binimgs.shape[2],binimgs.shape[3],3))
+        img = set_rgb_numpy(img,pred_roadsegment[0],(1,0.9,0))
+        plt.imshow(img, vmin=0, vmax=1)
+        add_ego(bx, dx)
+        plt.xlim((binimgs.shape[3], 0))
+        plt.ylim((0, binimgs.shape[3]))
+
+
+
+        #lane_divider
+        # ax = plt.subplot(gs[0, 1])
+        # ax.get_xaxis().set_ticks([])
+        # ax.get_yaxis().set_ticks([])
+        # img = np.zeros((binimgs.shape[2],binimgs.shape[3],3))
+        # img = set_rgb_numpy(img,bin_img[0],(0.54,0.17,0.88))
+        # plt.imshow(img, vmin=0, vmax=1)
+        # add_ego(bx, dx)
+        # plt.xlim((binimgs.shape[3], 0))
+        # plt.ylim((0, binimgs.shape[3]))
+
+        # ax = plt.subplot(gs[1, 1])
+        # ax.get_xaxis().set_ticks([])
+        # ax.get_yaxis().set_ticks([])
+        # img = np.zeros((binimgs.shape[2],binimgs.shape[3],3))
+        # img = set_rgb_numpy(img,pred[0],(0.54,0.17,0.88))
+        # plt.imshow(img, vmin=0, vmax=1)
+        # add_ego(bx, dx)
+        # plt.xlim((binimgs.shape[3], 0))
+        # plt.ylim((0, binimgs.shape[3]))
+
+     
+
+        #vehicle
+        ax = plt.subplot(gs[0, 2])
+        ax.get_xaxis().set_ticks([])
+        ax.get_yaxis().set_ticks([])
+        img = np.zeros((binimgs.shape[2],binimgs.shape[3],3))
+        img = set_rgb_numpy(img,bin_img[0],(0.25,0.4,0.88))
+        plt.imshow(img, vmin=0, vmax=1)
+        add_ego(bx, dx)
+        plt.xlim((binimgs.shape[3], 0))
+        plt.ylim((0, binimgs.shape[3]))
+
+        ax = plt.subplot(gs[1, 2])
+        ax.get_xaxis().set_ticks([])
+        ax.get_yaxis().set_ticks([])
+        img = np.zeros((binimgs.shape[2],binimgs.shape[3],3))
+        img = set_rgb_numpy(img,pred_vehicle[0],(0.25,0.4,0.88))
+        plt.imshow(img, vmin=0, vmax=1)
+        add_ego(bx, dx)
+        plt.xlim((binimgs.shape[3], 0))
+        plt.ylim((0, binimgs.shape[3]))
+
+       
+        
+        # # plot static map (improves visualization)
+        # rec = loader.dataset.ixes[counter]
+        # plot_nusc_map(rec, nusc_maps, loader.dataset.nusc, scene2map, dx, bx)
+        # plt.xlim((binimgs.shape[3], 0))
+        # plt.ylim((0, binimgs.shape[3]))
+
+        # imname = f'{output}{si:03}.jpg'
+        imname = f'{output}.jpg'
+        plt.savefig(imname)
+
+def plot_data(imgs,binimgs,preds,cams,grid_conf,gs,output):
+    dx, bx, _ = gen_dx_bx(grid_conf['xbound'], grid_conf['ybound'], grid_conf['zbound'])
+    dx, bx = dx[:2].numpy(), bx[:2].numpy()
+    for si in range(imgs.shape[0]):
+        plt.clf()
+        for imgi, img in enumerate(imgs[si]):
+            showimg = denormalize_img(img)
+            if cams[imgi][0] == 'CAM_FRONT':
+                ax = plt.subplot(gs[2 , 1])
+            elif cams[imgi][0] == 'CAM_FRONT_LEFT':
+                ax = plt.subplot(gs[2, 0])         
+            elif cams[imgi][0] == 'CAM_FRONT_RIGHT':
+                ax = plt.subplot(gs[2 , 2])
+            elif cams[imgi][0] == 'CAM_BACK':
+                ax = plt.subplot(gs[3, 1])
+                showimg = showimg.transpose(Image.FLIP_LEFT_RIGHT)
+            elif cams[imgi][0] == 'CAM_BACK_LEFT':
+                ax = plt.subplot(gs[3, 0])
+                showimg = showimg.transpose(Image.FLIP_LEFT_RIGHT)
+            elif cams[imgi][0] == 'CAM_BACK_RIGHT':
+                ax = plt.subplot(gs[3, 2])
+                showimg = showimg.transpose(Image.FLIP_LEFT_RIGHT)
+            
+            plt.imshow(showimg)
+            plt.axis('off')
+            plt.annotate(cams[imgi][0].replace('_', ' '), (0.01, 0.92), xycoords='axes fraction')
+
+        # ax = plt.subplot(gs[0, :])
+        # ax.get_xaxis().set_ticks([])
+        # ax.get_yaxis().set_ticks([])
+        # plt.setp(ax.spines.values(), color='b', linewidth=2)
+        # plt.legend(handles=[
+        #     mpatches.Patch(color=(0.0, 0.0, 1.0, 1.0), label='Output Vehicle Segmentation'),
+        #     mpatches.Patch(color='#76b900', label='Ego Vehicle'),
+        #     mpatches.Patch(color=(1.00, 0.50, 0.31, 0.8), label='Map (for visualization purposes only)')
+        # ], loc=(0.01, 0.86))
+        bin_img = binimgs.cpu().detach().numpy()[si]
+        pred = preds.cpu().detach().numpy()[si]
+        
+        
+
+    
+        #road_segment
+        # ax = plt.subplot(gs[0, 0])
+        # ax.get_xaxis().set_ticks([])
+        # ax.get_yaxis().set_ticks([])
+        # img = np.zeros((binimgs.shape[2],binimgs.shape[3],3))
+        # img = set_rgb_numpy(img,bin_img[0],(1,0.9,0))
+        # plt.imshow(img, vmin=0, vmax=1)
+        # add_ego(bx, dx)
+        # plt.xlim((binimgs.shape[3], 0))
+        # plt.ylim((0, binimgs.shape[3]))
+
+        # ax = plt.subplot(gs[1, 0])
+        # ax.get_xaxis().set_ticks([])
+        # ax.get_yaxis().set_ticks([])
+        # img = np.zeros((binimgs.shape[2],binimgs.shape[3],3))
+        # img = set_rgb_numpy(img,pred[0],(1,0.9,0))
+        # plt.imshow(img, vmin=0, vmax=1)
+        # add_ego(bx, dx)
+        # plt.xlim((binimgs.shape[3], 0))
+        # plt.ylim((0, binimgs.shape[3]))
+
+
+
+        #lane_divider
+        ax = plt.subplot(gs[0, 1])
+        ax.get_xaxis().set_ticks([])
+        ax.get_yaxis().set_ticks([])
+        img = np.zeros((binimgs.shape[2],binimgs.shape[3],3))
+        img = set_rgb_numpy(img,bin_img[0],(0.54,0.17,0.88))
+        plt.imshow(img, vmin=0, vmax=1)
+        add_ego(bx, dx)
+        plt.xlim((binimgs.shape[3], 0))
+        plt.ylim((0, binimgs.shape[3]))
+
+        ax = plt.subplot(gs[1, 1])
+        ax.get_xaxis().set_ticks([])
+        ax.get_yaxis().set_ticks([])
+        img = np.zeros((binimgs.shape[2],binimgs.shape[3],3))
+        img = set_rgb_numpy(img,pred[0],(0.54,0.17,0.88))
+        plt.imshow(img, vmin=0, vmax=1)
+        add_ego(bx, dx)
+        plt.xlim((binimgs.shape[3], 0))
+        plt.ylim((0, binimgs.shape[3]))
+
+     
+
+        #vehicle
+        # ax = plt.subplot(gs[0, 2])
+        # ax.get_xaxis().set_ticks([])
+        # ax.get_yaxis().set_ticks([])
+        # img = np.zeros((binimgs.shape[2],binimgs.shape[3],3))
+        # img = set_rgb_numpy(img,bin_img[0],(0.25,0.4,0.88))
+        # plt.imshow(img, vmin=0, vmax=1)
+        # add_ego(bx, dx)
+        # plt.xlim((binimgs.shape[3], 0))
+        # plt.ylim((0, binimgs.shape[3]))
+
+        # ax = plt.subplot(gs[1, 2])
+        # ax.get_xaxis().set_ticks([])
+        # ax.get_yaxis().set_ticks([])
+        # img = np.zeros((binimgs.shape[2],binimgs.shape[3],3))
+        # img = set_rgb_numpy(img,pred[0],(0.25,0.4,0.88))
+        # plt.imshow(img, vmin=0, vmax=1)
+        # add_ego(bx, dx)
+        # plt.xlim((binimgs.shape[3], 0))
+        # plt.ylim((0, binimgs.shape[3]))
+
+       
+        
+        # # plot static map (improves visualization)
+        # rec = loader.dataset.ixes[counter]
+        # plot_nusc_map(rec, nusc_maps, loader.dataset.nusc, scene2map, dx, bx)
+        # plt.xlim((binimgs.shape[3], 0))
+        # plt.ylim((0, binimgs.shape[3]))
+        
+
+        imname = f'{output}{si:03}.jpg'
+        plt.savefig(imname)
 def plot_nusc_map(rec, nusc_maps, nusc, scene2map, dx, bx):
     egopose = nusc.get('ego_pose', nusc.get('sample_data', rec['data']['LIDAR_TOP'])['ego_pose_token'])
     map_name = scene2map[nusc.get('scene', rec['scene_token'])['name']]
@@ -305,6 +544,7 @@ def plot_nusc_map(rec, nusc_maps, nusc, scene2map, dx, bx):
 
     poly_names = ['road_segment', 'lane']
     line_names = ['road_divider', 'lane_divider']
+    # line_names = ['lane_divider']
     lmap = get_local_map(nusc_maps[map_name], center,
                          50.0, poly_names, line_names)
     for name in poly_names:
@@ -347,12 +587,15 @@ def get_local_map(nmap, center, stretch, layer_names, line_names):
                 polygon = nmap.extract_polygon(polygon_token)
                 polys[layer_name].append(np.array(polygon.exterior.xy).T)
 
-    # lines
+    # lines 
+    # todo add spatial filter
+    records_in_patch = nmap.get_records_in_patch(box_coords,
+                                                 layer_names=line_names,
+                                                 mode='intersect')
     for layer_name in line_names:
         polys[layer_name] = []
-        for record in getattr(nmap, layer_name):
-            token = record['token']
-
+        for token in records_in_patch[layer_name]:
+            record = nmap.get(layer_name, token)
             line = nmap.extract_line(record['line_token'])
             if line.is_empty:  # Skip lines without nodes
                 continue

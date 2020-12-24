@@ -357,7 +357,123 @@ def viz_model_preds(version,
                 plt.ylim((0, out.shape[3]))
                 add_ego(bx, dx)
 
-                imname = f'eval{batchi:06}_{si:03}.jpg'
+                imname = f'./output/eval{batchi:06}_{si:03}.jpg'
+                print('saving', imname)
+                plt.savefig(imname)
+                counter += 1
+
+def viz_model_preds(version,
+                    modelf,
+                    dataroot='/data/nuscenes',
+                    map_folder='/data/nuscenes/mini',
+                    gpuid=1,
+                    viz_train=False,
+
+                    H=900, W=1600,
+                    resize_lim=(0.386,0.45),#(0.193, 0.225),
+                    final_dim=(256, 704),
+                    bot_pct_lim=(0.0, 0.22),
+                    rot_lim=(-5.4, 5.4),
+                    rand_flip=True,
+
+                    xbound=[-50.0, 50.0, 0.25],
+                    ybound=[-50.0, 50.0, 0.25],
+                    zbound=[-10.0, 10.0, 20.0],
+                    dbound=[4.0, 45.0, 0.5],
+
+                    bsz=4,
+                    nworkers=10,
+                    ):
+    grid_conf = {
+        'xbound': xbound,
+        'ybound': ybound,
+        'zbound': zbound,
+        'dbound': dbound,
+    }
+    cams = ['CAM_FRONT_LEFT', 'CAM_FRONT', 'CAM_FRONT_RIGHT',
+            'CAM_BACK_LEFT', 'CAM_BACK', 'CAM_BACK_RIGHT']
+    data_aug_conf = {
+                    'resize_lim': resize_lim,
+                    'final_dim': final_dim,
+                    'rot_lim': rot_lim,
+                    'H': H, 'W': W,
+                    'rand_flip': rand_flip,
+                    'bot_pct_lim': bot_pct_lim,
+                    'cams': cams,
+                    'Ncams': 5,
+                }
+    trainloader, valloader = compile_data(version, dataroot, data_aug_conf=data_aug_conf,
+                                          grid_conf=grid_conf, bsz=bsz, nworkers=nworkers,
+                                          parser_name='segmentationdata',map_folder=map_folder)
+    loader = trainloader if viz_train else valloader
+    nusc_maps = get_nusc_maps(map_folder)
+
+    device = torch.device('cpu') if gpuid < 0 else torch.device(f'cuda:{gpuid}')
+
+    model = compile_model(grid_conf, data_aug_conf, outC=1)
+    print('loading', modelf)
+    model.load_state_dict(torch.load(modelf))
+    model.to(device)
+
+    dx, bx, _ = gen_dx_bx(grid_conf['xbound'], grid_conf['ybound'], grid_conf['zbound'])
+    dx, bx = dx[:2].numpy(), bx[:2].numpy()
+
+    scene2map = {}
+    for rec in loader.dataset.nusc.scene:
+        log = loader.dataset.nusc.get('log', rec['log_token'])
+        scene2map[rec['name']] = log['location']
+
+
+    val = 0.01
+    fH, fW = final_dim
+    fig = plt.figure(figsize=(3*fW*val, (1.5*fW + 2*fH)*val))
+    gs = mpl.gridspec.GridSpec(3, 3, height_ratios=(1.5*fW, fH, fH))
+    gs.update(wspace=0.0, hspace=0.0, left=0.0, right=1.0, top=1.0, bottom=0.0)
+
+    model.eval()
+    counter = 0
+    with torch.no_grad():
+        for batchi, (imgs, rots, trans, intrins, post_rots, post_trans, binimgs, meta) in enumerate(loader):
+            out = model(imgs.to(device),
+                    rots.to(device),
+                    trans.to(device),
+                    intrins.to(device),
+                    post_rots.to(device),
+                    post_trans.to(device),
+                    )
+            out = out.sigmoid().cpu()
+
+            for si in range(imgs.shape[0]):
+                plt.clf()
+                for imgi, img in enumerate(imgs[si]):
+                    ax = plt.subplot(gs[1 + imgi // 3, imgi % 3])
+                    showimg = denormalize_img(img)
+                    # flip the bottom images
+                    if imgi > 2:
+                        showimg = showimg.transpose(Image.FLIP_LEFT_RIGHT)
+                    plt.imshow(showimg)
+                    plt.axis('off')
+                    plt.annotate(cams[imgi].replace('_', ' '), (0.01, 0.92), xycoords='axes fraction')
+
+                ax = plt.subplot(gs[0, :])
+                ax.get_xaxis().set_ticks([])
+                ax.get_yaxis().set_ticks([])
+                plt.setp(ax.spines.values(), color='b', linewidth=2)
+                plt.legend(handles=[
+                    mpatches.Patch(color=(0.0, 0.0, 1.0, 1.0), label='Output Vehicle Segmentation'),
+                    mpatches.Patch(color='#76b900', label='Ego Vehicle'),
+                    mpatches.Patch(color=(1.00, 0.50, 0.31, 0.8), label='Map (for visualization purposes only)')
+                ], loc=(0.01, 0.86))
+                plt.imshow(out[si].squeeze(0), vmin=0, vmax=1, cmap='Blues')
+
+                # plot static map (improves visualization)
+                rec = loader.dataset.ixes[counter]
+                plot_nusc_map(rec, nusc_maps, loader.dataset.nusc, scene2map, dx, bx)
+                plt.xlim((out.shape[3], 0))
+                plt.ylim((0, out.shape[3]))
+                add_ego(bx, dx)
+
+                imname = f'./output/eval{batchi:06}_{si:03}.jpg'
                 print('saving', imname)
                 plt.savefig(imname)
                 counter += 1

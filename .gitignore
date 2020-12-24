@@ -139,3 +139,5 @@ nohup.out
 .sbatch.tmp
 torch_train.sh
 .nfs*
+*.out
+.nfs*
