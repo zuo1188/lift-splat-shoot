@@ -34,3 +34,8 @@ W1214 11:34:33.271327 140642451121920 plugin_event_multiplexer.py:263] Deleting 
 W1214 11:34:33.271362 140642451121920 plugin_event_multiplexer.py:263] Deleting accumulator 'Dec14_10-59-30_10-9-1-8201214-105930'
 TensorFlow installation not found - running with reduced feature set.
 TensorBoard 2.4.0 at http://0.0.0.0:8810/ (Press CTRL+C to quit)
+W1222 09:27:58.154188 140402069460736 plugin_event_multiplexer.py:263] Deleting accumulator 'Dec22_08-52-32_10-9-1-8201222-085232'
+W1222 09:30:10.448892 140402069460736 plugin_event_multiplexer.py:263] Deleting accumulator 'Dec22_08-50-15_10-9-1-8201222-085015'
+W1222 09:30:35.870878 140402069460736 plugin_event_multiplexer.py:263] Deleting accumulator 'Dec22_08-53-00_10-9-1-8201222-085300'
+W1222 09:30:46.045084 140402069460736 plugin_event_multiplexer.py:263] Deleting accumulator 'Dec22_08-54-06_10-9-1-8201222-085406'
+W1222 09:31:01.294008 140402069460736 plugin_event_multiplexer.py:263] Deleting accumulator 'Dec22_09-01-39_10-9-1-8201222-090139'
